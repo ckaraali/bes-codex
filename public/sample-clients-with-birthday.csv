@@ -1,0 +1,5 @@
+Ad Soyad;E-posta;Telefon;Doğum Tarihi;İlk Tasarruf;Güncel Tasarruf
+Ahmet Yılmaz;ahmet.yilmaz@email.com;0532 123 4567;15.03.1985;50.000;75.000
+Fatma Kaya;fatma.kaya@email.com;0533 234 5678;22.07.1990;30.000;45.000
+Mehmet Demir;mehmet.demir@email.com;0534 345 6789;10.12.1988;80.000;120.000
+Ayşe Özkan;ayse.ozkan@email.com;0535 456 7890;${new Date().getDate().toString().padStart(2, '0')}.${(new Date().getMonth() + 1).toString().padStart(2, '0')}.1992;25.000;40.000

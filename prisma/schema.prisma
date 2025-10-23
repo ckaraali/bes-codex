@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String                 @id @default(cuid())
+  email         String                 @unique
+  name          String?
+  passwordHash  String
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  clients       Client[]
+  uploads       Upload[]
+  emailLogs     EmailLog[]
+  emailTemplate EmailTemplate?
+  campaigns     CommunicationCampaign[]
+}
+
+model Client {
+  id             String             @id @default(cuid())
+  ownerId        String
+  owner          User               @relation(fields: [ownerId], references: [id])
+  name           String
+  email          String
+  phone          String?
+  firstSavings   Decimal            @default(0)
+  currentSavings Decimal            @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  deletedAt      DateTime?
+  snapshots      SavingsSnapshot[]
+
+  @@index([ownerId])
+  @@index([email])
+}
+
+model SavingsSnapshot {
+  id        String   @id @default(cuid())
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+  amount    Decimal
+  recordedAt DateTime @default(now())
+
+  @@index([clientId])
+}
+
+model Upload {
+  id           String   @id @default(cuid())
+  ownerId      String
+  owner        User     @relation(fields: [ownerId], references: [id])
+  filename     String
+  totalRecords Int
+  processedAt  DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+model EmailLog {
+  id         String   @id @default(cuid())
+  ownerId    String
+  owner      User     @relation(fields: [ownerId], references: [id])
+  subject    String
+  bodyPreview String
+  recipients Int
+  sentAt     DateTime @default(now())
+
+  @@index([ownerId])
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  ownerId   String   @unique
+  owner     User     @relation(fields: [ownerId], references: [id])
+  subject   String
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CommunicationCampaign {
+  id          String          @id @default(cuid())
+  ownerId     String
+  owner       User            @relation(fields: [ownerId], references: [id])
+  subject     String
+  bodyHtml    String
+  bodyText    String
+  reasonsJson String
+  scheduledAt DateTime?
+  status      String          @default("SCHEDULED")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  recipients      CommunicationRecipient[]
+  channelStatuses CommunicationChannelStatus[]
+
+  @@index([ownerId])
+  @@index([scheduledAt])
+}
+
+model CommunicationRecipient {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   CommunicationCampaign @relation(fields: [campaignId], references: [id])
+  clientId   String
+  clientName String
+  clientEmail String
+  createdAt  DateTime @default(now())
+
+  @@index([campaignId])
+  @@index([clientId])
+}
+
+model CommunicationChannelStatus {
+  id          String                 @id @default(cuid())
+  campaignId  String
+  campaign    CommunicationCampaign  @relation(fields: [campaignId], references: [id])
+  channel     String
+  status      String                 @default("PENDING")
+  scheduledAt DateTime?
+  completedAt DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([campaignId])
+  @@index([channel])
+}

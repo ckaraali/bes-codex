@@ -1,0 +1,3 @@
+[submodule "quickchart"]
+	path = quickchart
+	url = https://github.com/typpo/quickchart.git
