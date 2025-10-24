@@ -404,18 +404,18 @@ export async function importClients(_prev: ActionResult | undefined, formData: F
   }
 
   const emails = Array.from(new Set(rows.map((row) => row.email.toLowerCase())));
-  let existingMap = new Map<
-    string,
-    {
-      id: string;
-      name: string | null;
-      current_savings: number | null;
-      client_type?: string | null;
-      policy_type?: string | null;
-      policy_start_date?: string | null;
-      policy_end_date?: string | null;
-    }
-  >();
+  type ExistingClientRecord = {
+    id: string;
+    email: string | null;
+    name: string | null;
+    current_savings: number | null;
+    client_type?: string | null;
+    policy_type?: string | null;
+    policy_start_date?: string | null;
+    policy_end_date?: string | null;
+  };
+
+  let existingMap = new Map<string, ExistingClientRecord>();
   if (emails.length > 0) {
     const selectColumns = supportsPolicyColumns
       ? "id, email, name, current_savings, client_type, policy_type, policy_start_date, policy_end_date"
@@ -425,15 +425,20 @@ export async function importClients(_prev: ActionResult | undefined, formData: F
       .from("clients")
       .select(selectColumns)
       .eq("owner_id", session.user.id)
-      .in("email", emails);
+      .in("email", emails)
+      .returns<ExistingClientRecord[]>();
 
     if (fetchError) {
       console.error("Supabase fetch clients error", fetchError);
       return { success: false, message: "Mevcut müşteriler alınamadı." };
     }
 
+    const normalizedExisting = (existingClients ?? []).filter(
+      (client): client is ExistingClientRecord => typeof client.email === "string" && client.email.length > 0
+    );
+
     existingMap = new Map(
-      (existingClients ?? []).map((client) => [client.email?.toLowerCase() ?? "", client])
+      normalizedExisting.map((client) => [client.email!.toLowerCase(), client])
     );
   }
 
