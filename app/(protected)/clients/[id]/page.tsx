@@ -168,9 +168,16 @@ export default async function ClientDetailPage({ params }: PageProps) {
   if (hasBesTrack) typeLabels.push("BES");
   if (hasEsTrack) typeLabels.push("ES");
   const typeDescription = typeLabels.length > 0 ? typeLabels.join(" + ") : "Tanımsız";
-  const policyStart =
+  let policyStart =
     supportsPolicyColumns && clientRow.policy_start_date ? new Date(clientRow.policy_start_date) : null;
-  const policyEnd = supportsPolicyColumns && clientRow.policy_end_date ? new Date(clientRow.policy_end_date) : null;
+  let policyEnd = supportsPolicyColumns && clientRow.policy_end_date ? new Date(clientRow.policy_end_date) : null;
+
+  if (policyStart && policyEnd && policyStart.getTime() > policyEnd.getTime()) {
+    const temp = policyStart;
+    policyStart = policyEnd;
+    policyEnd = temp;
+  }
+
   const totalPolicyDays =
     policyStart && policyEnd ? Math.ceil((policyEnd.getTime() - policyStart.getTime()) / (1000 * 60 * 60 * 24)) : null;
   const remainingPolicyDays =
