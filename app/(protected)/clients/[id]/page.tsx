@@ -5,6 +5,7 @@ import { getAuthSession } from "@/lib/auth";
 import { formatCurrency } from "@/lib/format";
 import { DeleteClientButton } from "@/components/clients/DeleteClientButton";
 import { EditClientForm } from "@/components/clients/EditClientForm";
+import { InsuranceTabs } from "@/components/clients/InsuranceTabs";
 import { ClientSparkline, type SparklinePoint } from "@/components/clients/Sparkline";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -203,91 +204,19 @@ export default async function ClientDetailPage({ params }: PageProps) {
     currentSavings
   };
 
-  return (
-    <div className="page-shell">
-      <Link href="/clients" style={{ color: "var(--accent)", fontWeight: 600 }}>
-        ← Müşteri listesine dön
-      </Link>
-
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "2rem" }}>{clientRow.name}</h1>
-          <p style={{ marginTop: "0.5rem", color: "var(--text-muted)" }}>{clientRow.email}</p>
-          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-            {typeLabels.length === 0 ? <TypeBadge tone="neutral">Tür bilgisi yok</TypeBadge> : null}
-            {hasBesTrack && <TypeBadge tone="bes">BES</TypeBadge>}
-            {hasEsTrack && <TypeBadge tone="es">ES</TypeBadge>}
-          </div>
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          <Link
-            href="#edit-client"
-            style={{
-              padding: "0.7rem 1.15rem",
-              borderRadius: "8px",
-              border: "1px solid var(--border)",
-              background: "#fff",
-              fontWeight: 600,
-              color: "var(--accent)"
-            }}
-          >
-            Bilgileri düzenle
-          </Link>
-          <Link
-            href={{
-              pathname: "/communications/new",
-              query: { selected: clientRow.id, preset: "fund-summary" }
-            }}
-            style={{
-              padding: "0.7rem 1.15rem",
-              borderRadius: "8px",
-              border: "1px solid var(--border)",
-              background: "#fff",
-              fontWeight: 600,
-              color: "var(--accent)"
-            }}
-          >
-            Fon özeti gönder
-          </Link>
-        </div>
-      </header>
-
-      <section className="card" style={{ display: "grid", gap: "1rem", padding: "1.5rem" }}>
-        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Müşteri bilgileri</h2>
-        <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          <InfoItem label="Telefon" value={clientRow.phone ?? "—"} />
-          <InfoItem label="Müşteri türü" value={typeDescription} />
-          {supportsBirthDate && clientRow.birth_date && (
-            <InfoItem 
-              label="Doğum Tarihi" 
-              value={new Date(clientRow.birth_date).toLocaleDateString("tr-TR")} 
-            />
-          )}
+  const besTabContent = hasBesTrack ? (
+    <>
+      <section className="card" style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem" }}>
+        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>BES özeti</h2>
+        <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
           <InfoItem label="İlk tasarruf" value={formatCurrency(firstSavings)} />
           <InfoItem label="Güncel tasarruf" value={formatCurrency(currentSavings)} />
-          <InfoItem
-            label="Büyüme"
-            value={growth === null ? "—" : `${growth > 0 ? "+" : ""}${growth.toFixed(1)}%`}
-          />
-          <InfoItem label="Eklenme tarihi" value={clientRow.created_at ? new Date(clientRow.created_at).toLocaleString("tr-TR") : "—"} />
-          <InfoItem label="Son güncelleme" value={clientRow.updated_at ? new Date(clientRow.updated_at).toLocaleString("tr-TR") : "—"} />
+          <InfoItem label="Büyüme" value={growth === null ? "—" : `${growth > 0 ? "+" : ""}${growth.toFixed(1)}%`} />
         </div>
-      </section>
-
-      <section id="edit-client" className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Müşteri bilgilerini düzenle</h2>
-        <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9rem" }}>
-          Güncel tasarruf değerinde yaptığınız değişiklikler, aylık özete otomatik yansıtılır.
-        </p>
-        <EditClientForm
-          client={clientFormValues}
-          supportsBirthDate={supportsBirthDate}
-          supportsPolicyColumns={supportsPolicyColumns}
-        />
       </section>
 
       <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Aylık birikim özeti</h2>
+        <h3 style={{ margin: 0, fontSize: "1.15rem" }}>Aylık birikim özeti</h3>
         {monthlySeries.length === 0 ? (
           <p style={{ color: "var(--text-muted)", margin: 0 }}>Henüz aylık özet oluşturulmadı.</p>
         ) : (
@@ -337,42 +266,26 @@ export default async function ClientDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      {supportsPolicyColumns && hasEsTrack && (
-        <section className="card" style={{ display: "grid", gap: "1rem", padding: "1.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Poliçe bilgileri</h2>
-          <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-            <InfoItem label="Poliçe türü" value={clientRow.policy_type ?? "—"} />
-            <InfoItem label="Başlangıç tarihi" value={policyStart ? formatDate(policyStart) : "—"} />
-            <InfoItem label="Bitiş tarihi" value={policyEnd ? formatDate(policyEnd) : "—"} />
-            {totalPolicyDays !== null && (
-              <InfoItem label="Toplam süre" value={`${totalPolicyDays} gün`} />
-            )}
-            {remainingPolicyDays !== null && (
-              <InfoItem
-                label="Kalan süre"
-                value={
-                  remainingPolicyDays >= 0
-                    ? `${remainingPolicyDays} gün`
-                    : `${Math.abs(remainingPolicyDays)} gün önce bitti`
-                }
-              />
-            )}
-          </div>
-        </section>
-      )}
-
       <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Tasarruf geçmişi</h2>
+        <h3 style={{ margin: 0, fontSize: "1.15rem" }}>Tasarruf geçmişi</h3>
         {snapshots.length === 0 ? (
           <p style={{ color: "var(--text-muted)", margin: 0 }}>Henüz kayıtlı tasarruf geçmişi bulunmuyor.</p>
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              margin: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.75rem"
+            }}
+          >
             {snapshots.map((snapshot) => (
               <li
                 key={snapshot.id}
                 style={{
                   display: "flex",
-                  flexDirection: "row",
                   justifyContent: "space-between",
                   gap: "1rem",
                   borderBottom: "1px solid var(--border)",
@@ -387,6 +300,141 @@ export default async function ClientDetailPage({ params }: PageProps) {
             ))}
           </ul>
         )}
+      </section>
+    </>
+  ) : (
+    <section
+      className="card"
+      style={{
+        padding: "1.5rem",
+        border: "1px dashed rgba(148, 163, 184, 0.6)",
+        background: "rgba(248, 250, 252, 0.8)"
+      }}
+    >
+      <p style={{ margin: 0, color: "var(--text-muted)" }}>Bu müşteri için kayıtlı BES bilgisi bulunmuyor.</p>
+    </section>
+  );
+
+  const esTabContent =
+    supportsPolicyColumns && hasEsTrack ? (
+      <section className="card" style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem" }}>
+        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>ES poliçe bilgileri</h2>
+        <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
+          <InfoItem label="Poliçe türü" value={clientRow.policy_type ?? "—"} />
+          <InfoItem label="Başlangıç tarihi" value={policyStart ? formatDate(policyStart) : "—"} />
+          <InfoItem label="Bitiş tarihi" value={policyEnd ? formatDate(policyEnd) : "—"} />
+          {totalPolicyDays !== null && <InfoItem label="Toplam süre" value={`${totalPolicyDays} gün`} />}
+          {remainingPolicyDays !== null && (
+            <InfoItem
+              label="Kalan süre"
+              value={
+                remainingPolicyDays >= 0
+                  ? `${remainingPolicyDays} gün`
+                  : `${Math.abs(remainingPolicyDays)} gün önce bitti`
+              }
+            />
+          )}
+        </div>
+      </section>
+    ) : (
+      <section
+        className="card"
+        style={{
+          padding: "1.5rem",
+          border: "1px dashed rgba(148, 163, 184, 0.6)",
+          background: "rgba(248, 250, 252, 0.8)"
+        }}
+      >
+        <p style={{ margin: 0, color: "var(--text-muted)" }}>Bu müşteri için kayıtlı ES poliçe bilgisi bulunmuyor.</p>
+      </section>
+    );
+
+  return (
+    <div className="page-shell">
+      <Link href="/clients" style={{ color: "var(--accent)", fontWeight: 600 }}>
+        ← Müşteri listesine dön
+      </Link>
+
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: "2rem" }}>{clientRow.name}</h1>
+          <p style={{ marginTop: "0.5rem", color: "var(--text-muted)" }}>{clientRow.email}</p>
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
+            {typeLabels.length === 0 ? <TypeBadge tone="neutral">Tür bilgisi yok</TypeBadge> : null}
+            {hasBesTrack && <TypeBadge tone="bes">BES</TypeBadge>}
+            {hasEsTrack && <TypeBadge tone="es">ES</TypeBadge>}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <Link
+            href="#edit-client"
+            style={{
+              padding: "0.7rem 1.15rem",
+              borderRadius: "8px",
+              border: "1px solid var(--border)",
+              background: "#fff",
+              fontWeight: 600,
+              color: "var(--accent)"
+            }}
+          >
+            Bilgileri düzenle
+          </Link>
+          <Link
+            href={{
+              pathname: "/communications/new",
+              query: { selected: clientRow.id, preset: "fund-summary" }
+            }}
+            style={{
+              padding: "0.7rem 1.15rem",
+              borderRadius: "8px",
+              border: "1px solid var(--border)",
+              background: "#fff",
+              fontWeight: 600,
+              color: "var(--accent)"
+            }}
+          >
+            Fon özeti gönder
+          </Link>
+        </div>
+      </header>
+
+      <section className="card" style={{ display: "flex", flexDirection: "column", gap: "1rem", padding: "1.5rem" }}>
+        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>İletişim bilgileri</h2>
+        <div style={{ display: "grid", gap: "0.75rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+          <InfoItem label="Telefon" value={clientRow.phone ?? "—"} />
+          <InfoItem label="E-posta" value={clientRow.email} />
+          <InfoItem label="Müşteri türü" value={typeDescription} />
+          {supportsBirthDate && clientRow.birth_date ? (
+            <InfoItem label="Doğum Tarihi" value={new Date(clientRow.birth_date).toLocaleDateString("tr-TR")} />
+          ) : null}
+          <InfoItem
+            label="Eklenme tarihi"
+            value={clientRow.created_at ? new Date(clientRow.created_at).toLocaleString("tr-TR") : "—"}
+          />
+          <InfoItem
+            label="Son güncelleme"
+            value={clientRow.updated_at ? new Date(clientRow.updated_at).toLocaleString("tr-TR") : "—"}
+          />
+        </div>
+      </section>
+
+      <InsuranceTabs
+        hasBes={hasBesTrack}
+        hasEs={supportsPolicyColumns && hasEsTrack}
+        besContent={besTabContent}
+        esContent={esTabContent}
+      />
+
+      <section id="edit-client" className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <h2 style={{ margin: 0, fontSize: "1.25rem" }}>Müşteri bilgilerini düzenle</h2>
+        <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.9rem" }}>
+          Güncel tasarruf değerinde yaptığınız değişiklikler, aylık özete otomatik yansıtılır.
+        </p>
+        <EditClientForm
+          client={clientFormValues}
+          supportsBirthDate={supportsBirthDate}
+          supportsPolicyColumns={supportsPolicyColumns}
+        />
       </section>
 
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
